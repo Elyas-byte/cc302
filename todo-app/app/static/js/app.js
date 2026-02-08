@@ -25,11 +25,12 @@ class TodoApp {
 
     // Setup all event listeners
     setupEventListeners() {
-        // Navigation
-        document.getElementById('dashboardBtn').addEventListener('click', () => this.renderDashboard());
-        document.getElementById('addBtn').addEventListener('click', () => this.renderAddForm());
+        // Use event delegation on document for all interactions
+        // Only set up once, not on every render
+        if (this.listenersInitialized) return;
+        this.listenersInitialized = true;
 
-        // Form submission
+        // Form submission via event delegation
         document.addEventListener('submit', (e) => {
             if (e.target.id === 'todoForm') {
                 e.preventDefault();
@@ -37,23 +38,55 @@ class TodoApp {
             }
         });
 
-        // Global delete and edit handlers
+        // Global event delegation for all button/checkbox interactions
         document.addEventListener('click', (e) => {
+            // Navigation - Dashboard/Home button
+            if (e.target.id === 'dashboardBtn') {
+                e.preventDefault();
+                this.renderDashboard();
+            }
+            // Navigation - Add button
+            if (e.target.id === 'addBtn') {
+                e.preventDefault();
+                this.renderAddForm();
+            }
+            // Delete button
             if (e.target.classList.contains('delete-btn')) {
                 const id = parseInt(e.target.dataset.id);
-                this.deleteTodo(id);
+                if (!isNaN(id)) {
+                    this.deleteTodo(id);
+                }
             }
+            // Edit button
             if (e.target.classList.contains('edit-btn')) {
                 const id = parseInt(e.target.dataset.id);
-                this.renderEditForm(id);
+                if (!isNaN(id)) {
+                    this.renderEditForm(id);
+                }
             }
+            // View button
             if (e.target.classList.contains('view-btn')) {
                 const id = parseInt(e.target.dataset.id);
-                this.renderDetailView(id);
+                if (!isNaN(id)) {
+                    this.renderDetailView(id);
+                }
             }
+            // Toggle checkbox
             if (e.target.classList.contains('toggle-checkbox')) {
                 const id = parseInt(e.target.dataset.id);
-                this.toggleTodo(id);
+                if (!isNaN(id)) {
+                    this.toggleTodo(id);
+                }
+            }
+            // Cancel edit button - needs to get ID from form
+            if (e.target.classList.contains('cancel-edit-btn')) {
+                const form = document.getElementById('todoForm');
+                if (form && form.dataset.todoId) {
+                    const id = parseInt(form.dataset.todoId);
+                    this.renderDetailView(id);
+                } else {
+                    this.renderDashboard();
+                }
             }
         });
     }
@@ -249,7 +282,6 @@ class TodoApp {
         `;
 
         content.innerHTML = html;
-        this.setupEventListeners();
     }
 
     // Render add form
@@ -287,7 +319,6 @@ class TodoApp {
             </div>
         `;
         content.innerHTML = html;
-        this.setupEventListeners();
     }
 
     // Render detail view
@@ -356,7 +387,6 @@ class TodoApp {
             </div>
         `;
         content.innerHTML = html;
-        this.setupEventListeners();
     }
 
     // Render edit form
@@ -392,7 +422,7 @@ class TodoApp {
                                 </div>
                                 <div class="d-flex gap-2">
                                     <button type="submit" class="btn btn-primary btn-lg">Save Changes</button>
-                                    <button type="button" class="btn btn-secondary btn-lg" onclick="app.renderDetailView(${id})">Cancel</button>
+                                    <button type="button" class="btn btn-secondary btn-lg cancel-edit-btn">Cancel</button>
                                 </div>
                             </form>
                         </div>
@@ -401,7 +431,6 @@ class TodoApp {
             </div>
         `;
         content.innerHTML = html;
-        this.setupEventListeners();
     }
 
     // Escape HTML to prevent XSS
