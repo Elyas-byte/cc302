@@ -3,64 +3,70 @@
 {% block title %}{{ todo.title }}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8 mx-auto">
-        <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary mb-3">← Back to List</a>
+<div style="max-width: 600px;">
+    <a href="{{ url_for('main.index') }}" class="back-link">← Back to list</a>
 
-        <div class="card">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <div>
-                        <h1 class="card-title {% if todo.completed %}completed{% endif %}">{{ todo.title }}</h1>
-                        <p class="text-muted mb-0">
-                            {% if todo.completed %}
-                                <span class="badge bg-success">✓ Completed</span>
-                            {% else %}
-                                <span class="badge bg-warning text-dark">⏳ Pending</span>
-                            {% endif %}
-                        </p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <form method="POST" action="{{ url_for('main.toggle_todo', todo_id=todo.id) }}">
-                            <button type="submit" class="btn {% if todo.completed %}btn-warning{% else %}btn-success{% endif %}">
-                                {% if todo.completed %}Mark Incomplete{% else %}Mark Complete{% endif %}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                {% if todo.description %}
-                <div class="mb-4">
-                    <h5>Description</h5>
-                    <p class="lead">{{ todo.description }}</p>
-                </div>
-                {% endif %}
-
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <h6 class="text-muted">Created</h6>
-                        <p>{{ todo.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="text-muted">Last Updated</h6>
-                        <p>{{ todo.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-                    </div>
-                </div>
-
-                {% if todo.due_date %}
-                <div class="alert alert-info">
-                    <strong>Due Date:</strong> {{ todo.due_date.strftime('%Y-%m-%d') }}
-                </div>
-                {% endif %}
-
-                <div class="d-flex gap-2">
-                    <a href="{{ url_for('main.edit_todo', todo_id=todo.id) }}" class="btn btn-primary btn-lg">Edit</a>
-                    <form method="POST" action="{{ url_for('main.delete_todo', todo_id=todo.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this todo?');">
-                        <button type="submit" class="btn btn-danger btn-lg">Delete</button>
-                    </form>
-                    <a href="{{ url_for('main.index') }}" class="btn btn-secondary btn-lg">Back</a>
+    <div class="card" style="padding: 2rem;">
+        <div style="margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <h1 class="completed" style="font-size: 1.875rem; font-weight: 600; margin: 0;">
+                        {% if todo.completed %}<span style="text-decoration: line-through; color: var(--text-secondary);">{% endif %}
+                        {{ todo.title }}
+                        {% if todo.completed %}</span>{% endif %}
+                    </h1>
                 </div>
             </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                {% if todo.completed %}
+                    <span class="badge badge-success">✓ Completed</span>
+                {% else %}
+                    <span class="badge badge-warning">⏳ Pending</span>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if todo.description %}
+        <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Description</h3>
+            <p style="font-size: 1rem; color: var(--text-primary); line-height: 1.6;">{{ todo.description }}</p>
+        </div>
+        {% endif %}
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border-color);">
+            <div>
+                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Created</h6>
+                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">{{ todo.created_at.strftime('%Y-%m-%d') }}</p>
+            </div>
+            <div>
+                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Updated</h6>
+                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">{{ todo.updated_at.strftime('%Y-%m-%d') }}</p>
+            </div>
+            {% if todo.due_date %}
+            <div>
+                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Due Date</h6>
+                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">{{ todo.due_date.strftime('%Y-%m-%d') }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            {% if todo.completed %}
+                <form method="POST" action="{{ url_for('main.toggle_todo', todo_id=todo.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-secondary">Mark Incomplete</button>
+                </form>
+            {% else %}
+                <form method="POST" action="{{ url_for('main.toggle_todo', todo_id=todo.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-success">Mark Complete</button>
+                </form>
+            {% endif %}
+
+            <a href="{{ url_for('main.edit_todo', todo_id=todo.id) }}" class="btn btn-primary">Edit</a>
+
+            <form method="POST" action="{{ url_for('main.delete_todo', todo_id=todo.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this task?');">
+                <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
         </div>
     </div>
 </div>

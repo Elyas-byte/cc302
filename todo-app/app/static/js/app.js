@@ -168,12 +168,9 @@ class TodoApp {
     // Show notification
     showNotification(message, type = 'info') {
         const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.className = `alert alert-${type}`;
         alertDiv.role = 'alert';
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
+        alertDiv.innerHTML = `${message}`;
         const container = document.getElementById('alertContainer');
         container.innerHTML = '';
         container.appendChild(alertDiv);
@@ -209,76 +206,61 @@ class TodoApp {
         const stats = this.getStats();
 
         let html = `
-            <div class="row">
-                <div class="col-lg-10 mx-auto">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h1>📋 My Todos</h1>
-                        <button id="addBtn" class="btn btn-primary btn-lg">+ Add New Todo</button>
-                    </div>
-
-                    ${stats.total > 0 ? `
-                        <div class="stats">
-                            <div class="stat-box">
-                                <div class="stat-number">${stats.total}</div>
-                                <div class="stat-label">Total Todos</div>
-                            </div>
-                            <div class="stat-box">
-                                <div class="stat-number">${stats.completed}</div>
-                                <div class="stat-label">Completed</div>
-                            </div>
-                            <div class="stat-box">
-                                <div class="stat-number">${stats.pending}</div>
-                                <div class="stat-label">Pending</div>
-                            </div>
-                        </div>
-                    ` : ''}
-
-                    ${this.todos.length > 0 ? `
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Status</th>
-                                        <th>Title</th>
-                                        <th>Due Date</th>
-                                        <th>Created</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${this.todos.map(todo => `
-                                        <tr>
-                                            <td>
-                                                <input type="checkbox" class="form-check-input toggle-checkbox" 
-                                                       data-id="${todo.id}" ${todo.completed ? 'checked' : ''}>
-                                            </td>
-                                            <td>
-                                                <a href="#" data-id="${todo.id}" class="text-decoration-none view-btn ${todo.completed ? 'completed' : ''}">
-                                                    ${this.escapeHtml(todo.title)}
-                                                </a>
-                                            </td>
-                                            <td>
-                                                ${this.formatDate(todo.dueDate)}
-                                            </td>
-                                            <td class="text-muted">${this.formatDate(todo.createdAt)}</td>
-                                            <td>
-                                                <button data-id="${todo.id}" class="btn btn-sm btn-outline-primary edit-btn">Edit</button>
-                                                <button data-id="${todo.id}" class="btn btn-sm btn-outline-danger delete-btn">Delete</button>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    ` : `
-                        <div class="card text-center p-5">
-                            <h5 class="text-muted">No todos yet!</h5>
-                            <p class="text-muted mb-3">Create your first todo to get started</p>
-                            <button id="addBtn" class="btn btn-primary">Create First Todo</button>
-                        </div>
-                    `}
+            <div class="action-bar">
+                <div class="action-bar-title">
+                    ${this.todos.length} ${this.todos.length === 1 ? 'task' : 'tasks'}
                 </div>
+                <button id="addBtn" class="btn btn-primary">+ Add Task</button>
             </div>
+
+            ${stats.total > 0 ? `
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-number">${stats.total}</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${stats.completed}</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${stats.pending}</div>
+                        <div class="stat-label">Pending</div>
+                    </div>
+                </div>
+            ` : ''}
+
+            ${this.todos.length > 0 ? `
+                <div class="card">
+                    ${this.todos.map(todo => `
+                        <div class="todo-item">
+                            <input type="checkbox" class="form-check-input toggle-checkbox" 
+                                   data-id="${todo.id}" ${todo.completed ? 'checked' : ''}>
+                            <div class="todo-item-content">
+                                <a href="#" data-id="${todo.id}" class="text-decoration-none view-btn">
+                                    <div class="todo-item-title ${todo.completed ? 'completed' : ''}">
+                                        ${this.escapeHtml(todo.title)}
+                                    </div>
+                                </a>
+                                ${todo.dueDate ? `
+                                    <div class="todo-item-date">📅 ${this.formatDate(todo.dueDate)}</div>
+                                ` : ''}
+                            </div>
+                            <div class="todo-item-actions">
+                                <button data-id="${todo.id}" class="icon-btn edit-btn" title="Edit">✏️</button>
+                                <button data-id="${todo.id}" class="icon-btn danger delete-btn" title="Delete">🗑️</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : `
+                <div class="empty-state">
+                    <div class="empty-state-icon">✨</div>
+                    <div class="empty-state-title">No tasks yet</div>
+                    <div class="empty-state-text">Create your first task to get started</div>
+                    <button id="addBtn" class="btn btn-primary">Create First Task</button>
+                </div>
+            `}
         `;
 
         content.innerHTML = html;
@@ -288,33 +270,33 @@ class TodoApp {
     renderAddForm() {
         const content = document.getElementById('content');
         const html = `
-            <div class="row">
-                <div class="col-lg-8 mx-auto">
-                    <h1 class="mb-4">➕ Add New Todo</h1>
-                    <div class="card">
-                        <div class="card-body p-4">
-                            <form id="todoForm" data-form-type="add">
-                                <div class="mb-3">
-                                    <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-lg" id="title" 
-                                           placeholder="What do you need to do?" required autofocus>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="description" class="form-label">Description</label>
-                                    <textarea class="form-control" id="description" rows="5"
-                                              placeholder="Add more details about this todo (optional)"></textarea>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="dueDate" class="form-label">Due Date</label>
-                                    <input type="date" class="form-control" id="dueDate">
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-primary btn-lg">Create Todo</button>
-                                    <button type="button" id="dashboardBtn" class="btn btn-secondary btn-lg">Cancel</button>
-                                </div>
-                            </form>
+            <a href="#" id="dashboardBtn" class="back-link">← Back</a>
+            <div style="max-width: 600px;">
+                <div class="card" style="padding: 2rem;">
+                    <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem;">Add a new task</h2>
+                    <form id="todoForm" data-form-type="add" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        <div>
+                            <label for="title" class="form-label">Title <span style="color: var(--danger);">*</span></label>
+                            <input type="text" class="form-control form-control-lg" id="title" 
+                                   placeholder="What do you need to do?" required autofocus
+                                   style="padding: 0.75rem; font-size: 1rem;">
                         </div>
-                    </div>
+                        <div>
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" rows="4"
+                                      placeholder="Add more details about this task (optional)"
+                                      style="padding: 0.75rem; font-size: 1rem;"></textarea>
+                        </div>
+                        <div>
+                            <label for="dueDate" class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="dueDate"
+                                   style="padding: 0.75rem; font-size: 1rem;">
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                            <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Create Task</button>
+                            <button type="button" id="dashboardBtn" class="btn btn-ghost" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Cancel</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         `;
@@ -331,57 +313,52 @@ class TodoApp {
 
         const content = document.getElementById('content');
         const html = `
-            <div class="row">
-                <div class="col-lg-8 mx-auto">
-                    <button id="dashboardBtn" class="btn btn-outline-secondary mb-3">← Back to List</button>
-                    <div class="card">
-                        <div class="card-body p-4">
-                            <div class="d-flex justify-content-between align-items-start mb-4">
-                                <div>
-                                    <h1 class="card-title ${todo.completed ? 'completed' : ''}">
-                                        ${this.escapeHtml(todo.title)}
-                                    </h1>
-                                    <p class="text-muted mb-0">
-                                        <span class="badge ${todo.completed ? 'bg-success' : 'bg-warning text-dark'}">
-                                            ${todo.completed ? '✓ Completed' : '⏳ Pending'}
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            ${todo.description ? `
-                                <div class="mb-4">
-                                    <h5>Description</h5>
-                                    <p class="lead">${this.escapeHtml(todo.description)}</p>
-                                </div>
-                            ` : ''}
-
-                            <div class="row mb-4">
-                                <div class="col-md-6">
-                                    <h6 class="text-muted">Created</h6>
-                                    <p>${new Date(todo.createdAt).toLocaleString()}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="text-muted">Last Updated</h6>
-                                    <p>${new Date(todo.updatedAt).toLocaleString()}</p>
-                                </div>
-                            </div>
-
-                            ${todo.dueDate ? `
-                                <div class="alert alert-info">
-                                    <strong>Due Date:</strong> ${this.formatDate(todo.dueDate)}
-                                </div>
-                            ` : ''}
-
-                            <div class="d-flex gap-2">
-                                <button data-id="${todo.id}" class="btn btn-primary btn-lg edit-btn">Edit</button>
-                                <button data-id="${todo.id}" class="btn btn-${todo.completed ? 'warning' : 'success'} btn-lg toggle-checkbox" style="cursor: pointer;">
-                                    ${todo.completed ? 'Mark Incomplete' : 'Mark Complete'}
-                                </button>
-                                <button data-id="${todo.id}" class="btn btn-danger btn-lg delete-btn">Delete</button>
-                                <button id="dashboardBtn" class="btn btn-secondary btn-lg">Back</button>
-                            </div>
+            <a href="#" id="dashboardBtn" class="back-link">← Back to list</a>
+            <div style="max-width: 600px;">
+                <div class="card" style="padding: 2rem;">
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="margin-bottom: 1rem;">
+                            <h1 style="font-size: 1.875rem; font-weight: 600; margin: 0;" class="${todo.completed ? 'completed' : ''}">
+                                ${this.escapeHtml(todo.title)}
+                            </h1>
                         </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <span class="badge ${todo.completed ? 'badge-success' : 'badge-warning'}">
+                                ${todo.completed ? '✓ Completed' : '⏳ Pending'}
+                            </span>
+                        </div>
+                    </div>
+
+                    ${todo.description ? `
+                        <div style="margin-bottom: 1.5rem;">
+                            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Description</h3>
+                            <p style="font-size: 1rem; color: var(--text-primary); line-height: 1.6;">${this.escapeHtml(todo.description)}</p>
+                        </div>
+                    ` : ''}
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border-color);">
+                        <div>
+                            <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Created</h6>
+                            <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">${new Date(todo.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                            <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Updated</h6>
+                            <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">${new Date(todo.updatedAt).toLocaleDateString()}</p>
+                        </div>
+                        ${todo.dueDate ? `
+                            <div>
+                                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Due Date</h6>
+                                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">${this.formatDate(todo.dueDate)}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <button data-id="${todo.id}" class="btn btn-${todo.completed ? 'secondary' : 'success'} toggle-checkbox" style="padding: 0.75rem 1.5rem; font-size: 1rem; cursor: pointer;">
+                            ${todo.completed ? 'Mark Incomplete' : 'Mark Complete'}
+                        </button>
+                        <button data-id="${todo.id}" class="btn btn-primary edit-btn" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Edit</button>
+                        <button data-id="${todo.id}" class="btn btn-danger delete-btn" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Delete</button>
                     </div>
                 </div>
             </div>
@@ -399,34 +376,34 @@ class TodoApp {
 
         const content = document.getElementById('content');
         const html = `
-            <div class="row">
-                <div class="col-lg-8 mx-auto">
-                    <button id="dashboardBtn" class="btn btn-outline-secondary mb-3">← Back</button>
-                    <h1 class="mb-4">✏️ Edit Todo</h1>
-                    <div class="card">
-                        <div class="card-body p-4">
-                            <form id="todoForm" data-form-type="edit" data-todo-id="${id}">
-                                <div class="mb-3">
-                                    <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-lg" id="title" 
-                                           value="${this.escapeHtml(todo.title)}" required autofocus>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="description" class="form-label">Description</label>
-                                    <textarea class="form-control" id="description" rows="5">${this.escapeHtml(todo.description || '')}</textarea>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="dueDate" class="form-label">Due Date</label>
-                                    <input type="date" class="form-control" id="dueDate" 
-                                           value="${todo.dueDate ? this.formatDate(todo.dueDate) : ''}">
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-primary btn-lg">Save Changes</button>
-                                    <button type="button" class="btn btn-secondary btn-lg cancel-edit-btn">Cancel</button>
-                                </div>
-                            </form>
+            <a href="#" id="dashboardBtn" class="back-link">← Back</a>
+            <div style="max-width: 600px;">
+                <div class="card" style="padding: 2rem;">
+                    <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem;">Edit task</h2>
+                    <form id="todoForm" data-form-type="edit" data-todo-id="${id}" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        <div>
+                            <label for="title" class="form-label">Title <span style="color: var(--danger);">*</span></label>
+                            <input type="text" class="form-control form-control-lg" id="title" 
+                                   value="${this.escapeHtml(todo.title)}" required autofocus
+                                   style="padding: 0.75rem; font-size: 1rem;">
                         </div>
-                    </div>
+                        <div>
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" rows="4"
+                                      placeholder="Add more details about this task (optional)"
+                                      style="padding: 0.75rem; font-size: 1rem;">${this.escapeHtml(todo.description || '')}</textarea>
+                        </div>
+                        <div>
+                            <label for="dueDate" class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="dueDate" 
+                                   value="${todo.dueDate ? this.formatDate(todo.dueDate) : ''}"
+                                   style="padding: 0.75rem; font-size: 1rem;">
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                            <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Save Changes</button>
+                            <button type="button" class="btn btn-ghost cancel-edit-btn" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Cancel</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         `;
