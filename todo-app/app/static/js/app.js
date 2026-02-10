@@ -4,6 +4,7 @@ class TodoApp {
         this.todos = this.loadTodos();
         this.currentView = 'dashboard';
         this.statsChart = null;
+        this.progressChart = null;
         this.init();
     }
 
@@ -215,18 +216,12 @@ class TodoApp {
             </div>
 
             ${stats.total > 0 ? `
-                <div class="stats">
+                <div style="display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.5rem;">
                     <div class="stat-box">
-                        <div class="stat-number">${stats.total}</div>
-                        <div class="stat-label">Total</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-number">${stats.completed}</div>
-                        <div class="stat-label">Completed</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-number">${stats.pending}</div>
-                        <div class="stat-label">Pending</div>
+                        <div style="height:220px;">
+                            <canvas id="progressChart"></canvas>
+                        </div>
+                        <div class="stat-label" style="margin-top:0.5rem;">Completed per day</div>
                     </div>
                     <div class="stat-box" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
                         <div style="width:100%;height:140px;">
@@ -271,8 +266,9 @@ class TodoApp {
         `;
 
         content.innerHTML = html;
-        // After DOM is updated, render the stats chart
+        // After DOM is updated, render the charts
         this.renderStatsChart();
+        this.renderProgressChart();
     }
 
     // Render the pie chart showing Completed / Overdue / Incomplete
@@ -307,6 +303,70 @@ class TodoApp {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    // Render line chart showing how many tasks were completed per day (last 7 days)
+    renderProgressChart(days = 7) {
+        if (typeof Chart === 'undefined') return;
+
+        const labels = [];
+        const counts = [];
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        for (let i = days - 1; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - i);
+            labels.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+            counts.push(0);
+        }
+
+        // Count completed tasks by their updatedAt date (best-effort completion date)
+        this.todos.forEach(todo => {
+            if (!todo.completed || !todo.updatedAt) return;
+            const ud = new Date(todo.updatedAt);
+            ud.setHours(0,0,0,0);
+            const diffDays = Math.round((ud - today) / (1000 * 60 * 60 * 24));
+            // diffDays is 0 for today, negative for past
+            const index = labels.length - 1 + diffDays; // convert relative to labels index
+            // Instead compute index by matching date string
+            const udLabel = ud.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            const li = labels.indexOf(udLabel);
+            if (li !== -1) counts[li] += 1;
+        });
+
+        const canvas = document.getElementById('progressChart');
+        if (!canvas) return;
+
+        if (this.progressChart) {
+            try { this.progressChart.destroy(); } catch (e) { }
+            this.progressChart = null;
+        }
+
+        this.progressChart = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Completed',
+                    data: counts,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37,99,235,0.08)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
                 }
             }
         });
