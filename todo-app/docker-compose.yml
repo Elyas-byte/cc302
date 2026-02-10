@@ -1,8 +1,8 @@
 version: '3.8'
 
 services:
-  todo-app:
-    build: .
+  todo:
+    image: elyrah/todo:latest
     ports:
       - "5000:5000"
     volumes:
