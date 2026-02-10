@@ -188,13 +188,6 @@ todo-app/
 - Responsive design for all devices
 - Clear call-to-action buttons
 
-### Color Palette
-- Primary: #667eea (Purple-blue)
-- Secondary: #764ba2 (Deep purple)
-- Success: #28a745 (Green)
-- Danger: #dc3545 (Red)
-- Background: Gradient (purple)
-- Text: Dark gray/black
 
 ### Navigation Structure
 - Header navigation with logo and menu

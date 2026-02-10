@@ -3,6 +3,7 @@ class TodoApp {
     constructor() {
         this.todos = this.loadTodos();
         this.currentView = 'dashboard';
+        this.statsChart = null;
         this.init();
     }
 
@@ -227,6 +228,12 @@ class TodoApp {
                         <div class="stat-number">${stats.pending}</div>
                         <div class="stat-label">Pending</div>
                     </div>
+                    <div class="stat-box" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                        <div style="width:100%;height:140px;">
+                            <canvas id="statsChart"></canvas>
+                        </div>
+                        <div class="stat-label" style="margin-top:0.5rem;">Overview</div>
+                    </div>
                 </div>
             ` : ''}
 
@@ -264,6 +271,45 @@ class TodoApp {
         `;
 
         content.innerHTML = html;
+        // After DOM is updated, render the stats chart
+        this.renderStatsChart();
+    }
+
+    // Render the pie chart showing Completed / Overdue / Incomplete
+    renderStatsChart() {
+        if (typeof Chart === 'undefined') return;
+        const total = this.todos.length;
+        const completed = this.todos.filter(t => t.completed).length;
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const overdue = this.todos.filter(t => !t.completed && t.dueDate && (new Date(t.dueDate) < today)).length;
+        const incomplete = Math.max(0, total - completed - overdue);
+
+        const canvas = document.getElementById('statsChart');
+        if (!canvas) return;
+
+        if (this.statsChart) {
+            try { this.statsChart.destroy(); } catch (e) { }
+            this.statsChart = null;
+        }
+
+        this.statsChart = new Chart(canvas.getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: ['Completed', 'Overdue', 'Incomplete'],
+                datasets: [{
+                    data: [completed, overdue, incomplete],
+                    backgroundColor: ['#4caf50', '#f44336', '#ff9800']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
     }
 
     // Render add form
