@@ -5,7 +5,31 @@ class TodoApp {
         this.currentView = 'dashboard';
         this.statsChart = null;
         this.progressChart = null;
+        this.initializeIdCounter();
         this.init();
+    }
+
+    // Initialize ID counter to be higher than all existing IDs
+    initializeIdCounter() {
+        let maxId = Date.now();
+        
+        // Check all todo IDs
+        this.todos.forEach(todo => {
+            if (todo.id > maxId) maxId = todo.id;
+            // Check all subtask IDs
+            if (todo.subtasks && Array.isArray(todo.subtasks)) {
+                todo.subtasks.forEach(subtask => {
+                    if (subtask.id > maxId) maxId = subtask.id;
+                });
+            }
+        });
+        
+        this.idCounter = maxId;
+    }
+
+    // Generate unique IDs
+    generateId() {
+        return ++this.idCounter;
     }
 
     // Load todos from localStorage
@@ -38,6 +62,10 @@ class TodoApp {
                 e.preventDefault();
                 this.handleFormSubmit();
             }
+            if (e.target.id === 'subtaskForm') {
+                e.preventDefault();
+                this.handleSubtaskSubmit();
+            }
         });
 
         // Global event delegation for all button/checkbox interactions
@@ -66,10 +94,12 @@ class TodoApp {
                     this.renderEditForm(id);
                 }
             }
-            // View button
-            if (e.target.classList.contains('view-btn')) {
-                const id = parseInt(e.target.dataset.id);
+            // View button - check both the link and the inner div
+            const viewBtn = e.target.closest('.view-btn');
+            if (viewBtn) {
+                const id = parseInt(viewBtn.dataset.id);
                 if (!isNaN(id)) {
+                    e.preventDefault();
                     this.renderDetailView(id);
                 }
             }
@@ -80,6 +110,50 @@ class TodoApp {
                     this.toggleTodo(id);
                 }
             }
+            // Subtask toggle
+            if (e.target.classList.contains('subtask-toggle')) {
+                const todoId = parseInt(e.target.dataset.todoId);
+                const subtaskId = parseInt(e.target.dataset.subtaskId);
+                if (!isNaN(todoId) && !isNaN(subtaskId)) {
+                    this.toggleSubtask(todoId, subtaskId);
+                    this.renderDetailView(todoId);
+                }
+            }
+            // Subtask delete button
+            if (e.target.classList.contains('subtask-delete-btn')) {
+                const todoId = parseInt(e.target.dataset.todoId);
+                const subtaskId = parseInt(e.target.dataset.subtaskId);
+                if (!isNaN(todoId) && !isNaN(subtaskId)) {
+                    this.deleteSubtask(todoId, subtaskId);
+                    this.renderDetailView(todoId);
+                }
+            }
+            // Subtask move up
+            if (e.target.classList.contains('subtask-up-btn')) {
+                const todoId = parseInt(e.target.dataset.todoId);
+                const subtaskId = parseInt(e.target.dataset.subtaskId);
+                if (!isNaN(todoId) && !isNaN(subtaskId)) {
+                    const todo = this.getTodo(todoId);
+                    const currentIndex = todo.subtasks.findIndex(s => s.id === subtaskId);
+                    if (currentIndex > 0) {
+                        this.reorderSubtask(todoId, subtaskId, currentIndex - 1);
+                        this.renderDetailView(todoId);
+                    }
+                }
+            }
+            // Subtask move down
+            if (e.target.classList.contains('subtask-down-btn')) {
+                const todoId = parseInt(e.target.dataset.todoId);
+                const subtaskId = parseInt(e.target.dataset.subtaskId);
+                if (!isNaN(todoId) && !isNaN(subtaskId)) {
+                    const todo = this.getTodo(todoId);
+                    const currentIndex = todo.subtasks.findIndex(s => s.id === subtaskId);
+                    if (currentIndex < todo.subtasks.length - 1) {
+                        this.reorderSubtask(todoId, subtaskId, currentIndex + 1);
+                        this.renderDetailView(todoId);
+                    }
+                }
+            }
             // Cancel edit button - needs to get ID from form
             if (e.target.classList.contains('cancel-edit-btn')) {
                 const form = document.getElementById('todoForm');
@@ -88,6 +162,17 @@ class TodoApp {
                     this.renderDetailView(id);
                 } else {
                     this.renderDashboard();
+                }
+            }
+            // Add subtask form toggle
+            if (e.target.id === 'addSubtaskBtn') {
+                e.preventDefault();
+                const form = document.getElementById('subtaskForm');
+                if (form) {
+                    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+                    if (form.style.display === 'block') {
+                        document.getElementById('subtaskInput').focus();
+                    }
                 }
             }
         });
@@ -102,7 +187,8 @@ class TodoApp {
             completed: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            dueDate
+            dueDate,
+            subtasks: []
         };
         this.todos.push(newTodo);
         this.saveTodos();
@@ -152,6 +238,110 @@ class TodoApp {
         return this.todos.find(t => t.id === id);
     }
 
+    // Add a subtask
+    addSubtask(todoId, title) {
+        const todo = this.getTodo(todoId);
+        if (!todo) return null;
+        
+        // Ensure subtasks array exists
+        if (!todo.subtasks) {
+            todo.subtasks = [];
+        }
+        
+        const subtask = {
+            id: this.generateId(),
+            title: title,
+            isDone: false,
+            order: todo.subtasks.length
+        };
+        
+        todo.subtasks.push(subtask);
+        todo.updatedAt = new Date().toISOString();
+        this.saveTodos();
+        return subtask;
+    }
+
+    // Toggle subtask completion
+    toggleSubtask(todoId, subtaskId) {
+        const todo = this.getTodo(todoId);
+        if (!todo || !Array.isArray(todo.subtasks) || todo.subtasks.length === 0) {
+            return null;
+        }
+        
+        // Ensure IDs are numbers for comparison
+        const numericSubtaskId = Number(subtaskId);
+        const subtask = todo.subtasks.find(s => Number(s.id) === numericSubtaskId);
+        
+        if (subtask) {
+            subtask.isDone = !subtask.isDone;
+            todo.updatedAt = new Date().toISOString();
+            this.saveTodos();
+            return subtask;
+        }
+        return null;
+    }
+
+    // Delete a subtask
+    deleteSubtask(todoId, subtaskId) {
+        const todo = this.getTodo(todoId);
+        if (!todo || !Array.isArray(todo.subtasks)) return null;
+        
+        const numericSubtaskId = Number(subtaskId);
+        const index = todo.subtasks.findIndex(s => Number(s.id) === numericSubtaskId);
+        
+        if (index !== -1) {
+            const deleted = todo.subtasks.splice(index, 1)[0];
+            // Reorder remaining subtasks
+            todo.subtasks.forEach((s, i) => {
+                s.order = i;
+            });
+            todo.updatedAt = new Date().toISOString();
+            this.saveTodos();
+            return deleted;
+        }
+        return null;
+    }
+
+    // Reorder subtasks
+    reorderSubtask(todoId, subtaskId, newOrder) {
+        const todo = this.getTodo(todoId);
+        if (!todo || !Array.isArray(todo.subtasks)) return null;
+        
+        const numericSubtaskId = Number(subtaskId);
+        const subtaskIndex = todo.subtasks.findIndex(s => Number(s.id) === numericSubtaskId);
+        
+        if (subtaskIndex === -1) return null;
+        
+        const subtask = todo.subtasks[subtaskIndex];
+        
+        if (newOrder < 0 || newOrder >= todo.subtasks.length) return null;
+        if (newOrder === subtaskIndex) return subtask;
+        
+        // Remove from current position
+        todo.subtasks.splice(subtaskIndex, 1);
+        // Insert at new position
+        todo.subtasks.splice(newOrder, 0, subtask);
+        
+        // Reorder all subtasks by their position in the array
+        todo.subtasks.forEach((s, i) => {
+            s.order = i;
+        });
+        
+        todo.updatedAt = new Date().toISOString();
+        this.saveTodos();
+        return subtask;
+    }
+
+    // Get subtask stats for a todo
+    getSubtaskStats(todoId) {
+        const todo = this.getTodo(todoId);
+        if (!todo || !todo.subtasks) return { total: 0, completed: 0 };
+        
+        const total = todo.subtasks.length;
+        const completed = todo.subtasks.filter(s => s.isDone).length;
+        return { total, completed };
+    }
+
     // Get statistics
     getStats() {
         const total = this.todos.length;
@@ -192,7 +382,17 @@ class TodoApp {
         }
 
         if (formType === 'add') {
-            this.addTodo(title, description, dueDate);
+            const todo = this.addTodo(title, description, dueDate);
+            
+            // Add initial subtasks if any
+            const formSubtasks = this.getFormSubtasks();
+            formSubtasks.forEach(s => {
+                this.addSubtask(todo.id, s.title);
+            });
+            
+            // Clear form subtasks
+            localStorage.removeItem('formSubtasks');
+            
             this.renderDashboard();
         } else if (formType === 'edit') {
             const id = parseInt(document.getElementById('todoForm').dataset.todoId);
@@ -202,8 +402,29 @@ class TodoApp {
         }
     }
 
+    // Handle subtask form submission
+    handleSubtaskSubmit() {
+        const form = document.getElementById('subtaskForm');
+        const todoId = parseInt(form.dataset.todoId);
+        const title = document.getElementById('subtaskInput').value.trim();
+
+        if (!title) {
+            this.showNotification('Subtask title is required!', 'danger');
+            return;
+        }
+
+        this.addSubtask(todoId, title);
+        document.getElementById('subtaskInput').value = '';
+        form.style.display = 'none';
+        this.showNotification('Subtask added!', 'success');
+        this.renderDetailView(todoId);
+    }
+
     // Render dashboard
     renderDashboard() {
+        // Clear form subtasks when returning home
+        localStorage.removeItem('formSubtasks');
+        
         const content = document.getElementById('content');
         const stats = this.getStats();
 
@@ -234,7 +455,10 @@ class TodoApp {
 
             ${this.todos.length > 0 ? `
                 <div class="card">
-                    ${this.todos.map(todo => `
+                    ${this.todos.map(todo => {
+                        const subtaskStats = this.getSubtaskStats(todo.id);
+                        const hasSubtasks = subtaskStats.total > 0;
+                        return `
                         <div class="todo-item">
                             <input type="checkbox" class="form-check-input toggle-checkbox" 
                                    data-id="${todo.id}" ${todo.completed ? 'checked' : ''}>
@@ -247,13 +471,24 @@ class TodoApp {
                                 ${todo.dueDate ? `
                                     <div class="todo-item-date">📅 ${this.formatDate(todo.dueDate)}</div>
                                 ` : ''}
+                                ${hasSubtasks ? `
+                                    <div style="margin-top: 0.5rem;">
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.4rem;">
+                                            ${subtaskStats.completed}/${subtaskStats.total} subtasks
+                                        </div>
+                                        <div style="width: 100%; height: 4px; background-color: var(--border-color); border-radius: 2px; overflow: hidden;">
+                                            <div style="height: 100%; width: ${(subtaskStats.completed / subtaskStats.total) * 100}%; background-color: var(--success); transition: width 0.3s;"></div>
+                                        </div>
+                                    </div>
+                                ` : ''}
                             </div>
                             <div class="todo-item-actions">
                                 <button data-id="${todo.id}" class="icon-btn edit-btn" title="Edit">✏️</button>
                                 <button data-id="${todo.id}" class="icon-btn danger delete-btn" title="Delete">🗑️</button>
                             </div>
                         </div>
-                    `).join('')}
+                    `;
+                    }).join('')}
                 </div>
             ` : `
                 <div class="empty-state">
@@ -398,6 +633,17 @@ class TodoApp {
                             <input type="date" class="form-control" id="dueDate"
                                    style="padding: 0.75rem; font-size: 1rem;">
                         </div>
+
+                        <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 0.5rem;">
+                            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-primary);">Subtasks (optional)</h3>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                                <input type="text" id="newSubtaskInput" class="form-control" 
+                                       placeholder="Add a subtask..." style="padding: 0.75rem; font-size: 1rem;">
+                                <button type="button" id="addInitialSubtaskBtn" class="btn btn-primary" style="padding: 0.75rem 1rem; white-space: nowrap;">Add</button>
+                            </div>
+                            <div id="initialSubtasksList" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                        </div>
+
                         <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
                             <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Create Task</button>
                             <button type="button" id="dashboardBtn" class="btn btn-ghost" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Cancel</button>
@@ -407,6 +653,72 @@ class TodoApp {
             </div>
         `;
         content.innerHTML = html;
+        
+        // Set up event listeners for subtask addition
+        document.getElementById('addInitialSubtaskBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('newSubtaskInput');
+            const title = input.value.trim();
+            if (title) {
+                this.addInitialSubtask(title);
+                input.value = '';
+                input.focus();
+            }
+        });
+        
+        // Allow Enter key to add subtask
+        document.getElementById('newSubtaskInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('addInitialSubtaskBtn').click();
+            }
+        });
+
+        // Render any existing initial subtasks
+        this.renderFormSubtasks();
+    }
+
+    addInitialSubtask(title) {
+        const list = document.getElementById('initialSubtasksList');
+        const subtasks = this.getFormSubtasks();
+        const id = this.generateId();
+        subtasks.push({ id, title });
+        localStorage.setItem('formSubtasks', JSON.stringify(subtasks));
+        this.renderFormSubtasks();
+    }
+
+    removeInitialSubtask(id) {
+        let subtasks = this.getFormSubtasks();
+        subtasks = subtasks.filter(s => s.id !== id);
+        localStorage.setItem('formSubtasks', JSON.stringify(subtasks));
+        this.renderFormSubtasks();
+    }
+
+    getFormSubtasks() {
+        const stored = localStorage.getItem('formSubtasks');
+        return stored ? JSON.parse(stored) : [];
+    }
+
+    renderFormSubtasks() {
+        const subtasks = this.getFormSubtasks();
+        const list = document.getElementById('initialSubtasksList');
+        
+        list.innerHTML = subtasks.map(s => `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: var(--bg-light); border-radius: 0.5rem;">
+                <span style="color: var(--text-primary);">${this.escapeHtml(s.title)}</span>
+                <button type="button" class="remove-initial-subtask-btn icon-btn danger" 
+                        data-id="${s.id}" style="width: 1.75rem; height: 1.75rem; padding: 0; font-size: 0.9rem;">✕</button>
+            </div>
+        `).join('');
+
+        // Add event listeners to remove buttons
+        document.querySelectorAll('.remove-initial-subtask-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const id = parseInt(btn.dataset.id);
+                this.removeInitialSubtask(id);
+            });
+        });
     }
 
     // Render detail view
@@ -417,6 +729,7 @@ class TodoApp {
             return;
         }
 
+        const subtaskStats = this.getSubtaskStats(id);
         const content = document.getElementById('content');
         const html = `
             <a href="#" id="dashboardBtn" class="back-link">← Back to list</a>
@@ -432,6 +745,11 @@ class TodoApp {
                             <span class="badge ${todo.completed ? 'badge-success' : 'badge-warning'}">
                                 ${todo.completed ? '✓ Completed' : '⏳ Pending'}
                             </span>
+                            ${subtaskStats.total > 0 ? `
+                                <span class="badge" style="background-color: var(--primary); color: white; margin-left: 0.5rem;">
+                                    📋 ${subtaskStats.completed}/${subtaskStats.total} subtasks
+                                </span>
+                            ` : ''}
                         </div>
                     </div>
 
@@ -439,6 +757,43 @@ class TodoApp {
                         <div style="margin-bottom: 1.5rem;">
                             <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Description</h3>
                             <p style="font-size: 1rem; color: var(--text-primary); line-height: 1.6;">${this.escapeHtml(todo.description)}</p>
+                        </div>
+                    ` : ''}
+
+                    ${subtaskStats.total > 0 ? `
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    Subtasks (${subtaskStats.completed}/${subtaskStats.total})
+                                </h3>
+                                <div style="width: 150px; height: 8px; background-color: var(--border-color); border-radius: 4px; overflow: hidden;">
+                                    <div style="height: 100%; background-color: var(--success); width: ${(subtaskStats.completed / subtaskStats.total) * 100}%;"></div>
+                                </div>
+                            </div>
+                            <div style="background-color: var(--bg-light); border-radius: 0.5rem; padding: 1rem;">
+                                ${todo.subtasks.map((subtask, arrayIndex) => {
+                                        const subtaskId = Number(subtask.id);
+                                        return `
+                                    <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0; ${arrayIndex < todo.subtasks.length - 1 ? 'border-bottom: 1px solid var(--border-color);' : ''}">
+                                        <input type="checkbox" class="form-check-input subtask-toggle" 
+                                               data-todo-id="${id}" data-subtask-id="${subtaskId}" 
+                                               ${subtask.isDone ? 'checked' : ''} style="width: 1.25rem; height: 1.25rem; cursor: pointer;">
+                                        <div style="flex: 1; ${subtask.isDone ? 'text-decoration: line-through; color: var(--text-secondary);' : ''}">
+                                            ${this.escapeHtml(subtask.title)}
+                                        </div>
+                                        <div style="display: flex; gap: 0.5rem;">
+                                            ${arrayIndex > 0 ? `
+                                                <button class="icon-btn subtask-up-btn" data-todo-id="${id}" data-subtask-id="${subtaskId}" title="Move up" style="padding: 0.25rem; font-size: 0.875rem;">⬆️</button>
+                                            ` : ''}
+                                            ${arrayIndex < todo.subtasks.length - 1 ? `
+                                                <button class="icon-btn subtask-down-btn" data-todo-id="${id}" data-subtask-id="${subtaskId}" title="Move down" style="padding: 0.25rem; font-size: 0.875rem;">⬇️</button>
+                                            ` : ''}
+                                            <button class="icon-btn danger subtask-delete-btn" data-todo-id="${id}" data-subtask-id="${subtaskId}" title="Delete" style="padding: 0.25rem; font-size: 0.875rem;">🗑️</button>
+                                        </div>
+                                    </div>
+                                    `;
+                                }).join('')}
+                            </div>
                         </div>
                     ` : ''}
 
@@ -457,6 +812,19 @@ class TodoApp {
                                 <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">${this.formatDate(todo.dueDate)}</p>
                             </div>
                         ` : ''}
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <button id="addSubtaskBtn" class="btn btn-secondary" style="width: 100%; padding: 0.75rem; font-size: 1rem; margin-bottom: 1rem;">+ Add Subtask</button>
+                        
+                        <form id="subtaskForm" data-todo-id="${id}" style="display: none; margin-bottom: 1rem;">
+                            <div style="display: flex; gap: 0.75rem;">
+                                <input type="text" id="subtaskInput" class="form-control" placeholder="Enter subtask..." 
+                                       style="flex: 1; padding: 0.75rem; border-radius: 0.375rem; border: 1px solid var(--border-color);
+                                              background-color: var(--bg-white); color: var(--text-primary);">
+                                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem;">Add</button>
+                            </div>
+                        </form>
                     </div>
 
                     <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
