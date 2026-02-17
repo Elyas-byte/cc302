@@ -6,7 +6,9 @@ class TodoApp {
         this.statsChart = null;
         this.progressChart = null;
         this.searchQuery = '';
+        this.shownReminders = new Set();
         this.initializeIdCounter();
+        this.requestNotificationPermission();
         this.init();
     }
 
@@ -48,6 +50,78 @@ class TodoApp {
     init() {
         this.setupEventListeners();
         this.renderDashboard();
+        this.startReminderCheck();
+    }
+
+    // Request notification permission
+    requestNotificationPermission() {
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    }
+
+    // Start checking for reminders every minute
+    startReminderCheck() {
+        this.checkReminders();
+        setInterval(() => this.checkReminders(), 60000); // Check every minute
+    }
+
+    // Check for tasks due soon
+    checkReminders() {
+        const dueSoonTasks = this.getTasksDueSoon();
+        dueSoonTasks.forEach(todo => {
+            const reminderId = `reminder-${todo.id}`;
+            if (!this.shownReminders.has(reminderId)) {
+                this.showReminder(todo);
+                this.shownReminders.add(reminderId);
+            }
+        });
+    }
+
+    // Get tasks due in the next 24 hours
+    getTasksDueSoon(hoursAhead = 24) {
+        const now = new Date();
+        const futureTime = new Date(now.getTime() + hoursAhead * 60 * 60 * 1000);
+        
+        return this.todos.filter(todo => {
+            if (todo.completed || !todo.dueDate) return false;
+            const dueDate = new Date(todo.dueDate);
+            return dueDate > now && dueDate <= futureTime;
+        });
+    }
+
+    // Show reminder for a task
+    showReminder(todo) {
+        const dueDate = new Date(todo.dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        let timeMsg = '';
+        if (dueDate.toDateString() === today.toDateString()) {
+            timeMsg = 'due today';
+        } else {
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            if (dueDate.toDateString() === tomorrow.toDateString()) {
+                timeMsg = 'due tomorrow';
+            } else {
+                timeMsg = `due on ${dueDate.toLocaleDateString()}`;
+            }
+        }
+
+        const message = `Task "${todo.title}" is ${timeMsg}`;
+
+        // Show browser notification if supported
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Task Reminder', {
+                body: message,
+                icon: '📋',
+                tag: `reminder-${todo.id}` // Prevent duplicates
+            });
+        }
+
+        // Also show in-app notification
+        this.showNotification(message, 'info');
     }
 
     // Setup all event listeners
@@ -213,6 +287,8 @@ class TodoApp {
         if (todo) {
             Object.assign(todo, updates, { updatedAt: new Date().toISOString() });
             this.saveTodos();
+            // Reset reminder when task is updated (in case due date changed)
+            this.shownReminders.delete(`reminder-${id}`);
             return todo;
         }
         return null;
@@ -225,6 +301,10 @@ class TodoApp {
             todo.completed = !todo.completed;
             todo.updatedAt = new Date().toISOString();
             this.saveTodos();
+            // Clear reminder if task is marked as completed
+            if (todo.completed) {
+                this.shownReminders.delete(`reminder-${id}`);
+            }
             this.showNotification(
                 `Todo marked as ${todo.completed ? 'completed' : 'incomplete'}!`,
                 'success'
@@ -239,6 +319,8 @@ class TodoApp {
         if (confirm(`Are you sure you want to delete "${todo.title}"?`)) {
             this.todos = this.todos.filter(t => t.id !== id);
             this.saveTodos();
+            // Clear reminder when task is deleted
+            this.shownReminders.delete(`reminder-${id}`);
             this.showNotification(`Todo "${todo.title}" deleted successfully!`, 'success');
             this.renderDashboard();
         }
@@ -470,6 +552,42 @@ class TodoApp {
                     <button id="addBtn" class="btn btn-primary">+ Add Task</button>
                 </div>
             </div>
+
+            ${!isSearching ? (() => {
+                const dueSoon = this.getTasksDueSoon(24);
+                return dueSoon.length > 0 ? `
+                    <div class="card" style="background-color: #fef3c7; border-color: #fcd34d; margin-bottom: 1.5rem;">
+                        <div style="padding: 1rem;">
+                            <div style="font-weight: 600; color: #92400e; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                ⏰ Due Soon (Next 24 Hours)
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                ${dueSoon.map(todo => {
+                                    const dueDate = new Date(todo.dueDate);
+                                    const hours = Math.floor((dueDate - new Date()) / (1000 * 60 * 60));
+                                    let timeStr = '';
+                                    if (hours < 1) {
+                                        timeStr = 'due in less than 1 hour';
+                                    } else if (hours === 1) {
+                                        timeStr = 'due in 1 hour';
+                                    } else {
+                                        timeStr = `due in ${hours} hours`;
+                                    }
+                                    return `
+                                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0;">
+                                            <div>
+                                                <div style="color: #1f2937; font-weight: 500;">${this.escapeHtml(todo.title)}</div>
+                                                <div style="font-size: 0.85rem; color: #78350f;">${timeStr}</div>
+                                            </div>
+                                            <button data-id="${todo.id}" class="icon-btn view-btn" data-id="${todo.id}" style="color: #d97706;">👁️</button>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                ` : '';
+            })() : ''}
 
             ${!isSearching && stats.total > 0 ? `
                 <div style="display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.5rem;">
