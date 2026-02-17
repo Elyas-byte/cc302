@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Task - {{ todo.title }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px;">
+    <a href="{{ url_for('main.view_todo', todo_id=todo.id) }}" class="back-link">← Back</a>
+
+    <div class="card" style="padding: 2rem;">
+        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem;">Edit task</h2>
+
+        <form method="POST" style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <div>
+                <label for="title" class="form-label">Title <span style="color: var(--danger);">*</span></label>
+                <input type="text" class="form-control form-control-lg" id="title" name="title" 
+                       value="{{ todo.title }}" placeholder="What do you need to do?" required autofocus
+                       style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
+            <div>
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="4"
+                          placeholder="Add more details about this task (optional)"
+                          style="padding: 0.75rem; font-size: 1rem;">{{ todo.description or '' }}</textarea>
+            </div>
+
+            <div>
+                <label for="due_date" class="form-label">Due Date</label>
+                <input type="date" class="form-control" id="due_date" name="due_date"
+                       value="{% if todo.due_date %}{{ todo.due_date.strftime('%Y-%m-%d') }}{% endif %}"
+                       style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Save Changes</button>
+                <a href="{{ url_for('main.view_todo', todo_id=todo.id) }}" class="btn btn-ghost" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

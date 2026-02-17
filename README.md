@@ -65,6 +65,52 @@ python run.py
 5. **Open your browser:**
 Navigate to `http://localhost:5000`
 
+## Running with Docker
+
+### Prerequisites
+- Docker installed on your system
+- Docker Compose (optional, for easier volume management)
+
+### Using Docker Compose (Recommended)
+
+1. **Navigate to the project directory:**
+```bash
+cd todo-app
+```
+
+2. **Build and run the application:**
+```bash
+docker-compose up --build
+```
+
+3. **Open your browser:**
+Navigate to `http://localhost:5000`
+
+4. **Stop the application:**
+```bash
+docker-compose down
+```
+
+### Using Docker Only
+
+1. **Navigate to the project directory:**
+```bash
+cd todo-app
+```
+
+2. **Build the Docker image:**
+```bash
+docker build -t todo-app .
+```
+
+3. **Run the container:**
+```bash
+docker run -p 5000:5000 todo-app
+```
+
+4. **Open your browser:**
+Navigate to `http://localhost:5000`
+
 ## Project Structure
 
 ```
@@ -82,6 +128,8 @@ todo-app/
 ├── config.py                 # Configuration settings
 ├── run.py                    # Application entry point
 ├── requirements.txt          # Python dependencies
+├── Dockerfile                # Docker image definition
+├── docker-compose.yml        # Docker Compose configuration
 ├── PRD.md                    # Product Requirements Document
 └── README.md                 # This file
 ```
