@@ -5,6 +5,7 @@ class TodoApp {
         this.currentView = 'dashboard';
         this.statsChart = null;
         this.progressChart = null;
+        this.searchQuery = '';
         this.initializeIdCounter();
         this.init();
     }
@@ -174,6 +175,16 @@ class TodoApp {
                         document.getElementById('subtaskInput').focus();
                     }
                 }
+            }
+        });
+
+        // Search input event listener
+        document.addEventListener('input', (e) => {
+            if (e.target.id === 'searchInput') {
+                this.searchQuery = e.target.value;
+                // Save cursor position before rendering
+                const cursorPos = e.target.selectionStart;
+                this.renderDashboard(cursorPos);
             }
         });
     }
@@ -350,6 +361,20 @@ class TodoApp {
         return { total, completed, pending };
     }
 
+    // Search todos
+    searchTodos(query) {
+        if (!query || query.trim().length === 0) {
+            return this.todos;
+        }
+
+        const searchTerm = query.toLowerCase().trim();
+        return this.todos.filter(todo => {
+            const titleMatch = todo.title.toLowerCase().includes(searchTerm);
+            const descriptionMatch = todo.description && todo.description.toLowerCase().includes(searchTerm);
+            return titleMatch || descriptionMatch;
+        });
+    }
+
     // Format date
     formatDate(dateString) {
         if (!dateString) return '-';
@@ -421,22 +446,32 @@ class TodoApp {
     }
 
     // Render dashboard
-    renderDashboard() {
+    renderDashboard(cursorPos = null) {
         // Clear form subtasks when returning home
         localStorage.removeItem('formSubtasks');
         
         const content = document.getElementById('content');
         const stats = this.getStats();
+        const displayedTodos = this.searchTodos(this.searchQuery);
+        const isSearching = this.searchQuery.length > 0;
 
         let html = `
             <div class="action-bar">
-                <div class="action-bar-title">
-                    ${this.todos.length} ${this.todos.length === 1 ? 'task' : 'tasks'}
+                <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
+                    <div class="action-bar-title">
+                        ${isSearching ? `Search results: ${displayedTodos.length}` : `${this.todos.length} ${this.todos.length === 1 ? 'task' : 'tasks'}`}
+                    </div>
                 </div>
-                <button id="addBtn" class="btn btn-primary">+ Add Task</button>
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="searchInput" class="form-control" 
+                           placeholder="Search tasks..." 
+                           value="${this.escapeHtml(this.searchQuery)}"
+                           style="max-width: 300px; padding: 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border-color); background-color: var(--bg-white); color: var(--text-primary);">
+                    <button id="addBtn" class="btn btn-primary">+ Add Task</button>
+                </div>
             </div>
 
-            ${stats.total > 0 ? `
+            ${!isSearching && stats.total > 0 ? `
                 <div style="display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.5rem;">
                     <div class="stat-box">
                         <div style="height:220px;">
@@ -453,9 +488,9 @@ class TodoApp {
                 </div>
             ` : ''}
 
-            ${this.todos.length > 0 ? `
+            ${displayedTodos.length > 0 ? `
                 <div class="card">
-                    ${this.todos.map(todo => {
+                    ${displayedTodos.map(todo => {
                         const subtaskStats = this.getSubtaskStats(todo.id);
                         const hasSubtasks = subtaskStats.total > 0;
                         return `
@@ -492,18 +527,31 @@ class TodoApp {
                 </div>
             ` : `
                 <div class="empty-state">
-                    <div class="empty-state-icon">✨</div>
-                    <div class="empty-state-title">No tasks yet</div>
-                    <div class="empty-state-text">Create your first task to get started</div>
+                    <div class="empty-state-icon">${isSearching ? '🔍' : '✨'}</div>
+                    <div class="empty-state-title">${isSearching ? 'No matching tasks' : 'No tasks yet'}</div>
+                    <div class="empty-state-text">${isSearching ? 'Try a different search or create a new task' : 'Create your first task to get started'}</div>
                     <button id="addBtn" class="btn btn-primary">Create First Task</button>
                 </div>
             `}
         `;
 
         content.innerHTML = html;
-        // After DOM is updated, render the charts
-        this.renderStatsChart();
-        this.renderProgressChart();
+        // Restore focus and cursor position to search input if searching
+        if (isSearching) {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.focus();
+                // Restore cursor position if available
+                if (cursorPos !== null) {
+                    searchInput.setSelectionRange(cursorPos, cursorPos);
+                }
+            }
+        }
+        // After DOM is updated, render the charts only when not searching
+        if (!isSearching) {
+            this.renderStatsChart();
+            this.renderProgressChart();
+        }
     }
 
     // Render the pie chart showing Completed / Overdue / Incomplete
