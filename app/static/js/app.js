@@ -182,7 +182,9 @@ class TodoApp {
         document.addEventListener('input', (e) => {
             if (e.target.id === 'searchInput') {
                 this.searchQuery = e.target.value;
-                this.renderDashboard();
+                // Save cursor position before rendering
+                const cursorPos = e.target.selectionStart;
+                this.renderDashboard(cursorPos);
             }
         });
     }
@@ -444,7 +446,7 @@ class TodoApp {
     }
 
     // Render dashboard
-    renderDashboard() {
+    renderDashboard(cursorPos = null) {
         // Clear form subtasks when returning home
         localStorage.removeItem('formSubtasks');
         
@@ -534,6 +536,17 @@ class TodoApp {
         `;
 
         content.innerHTML = html;
+        // Restore focus and cursor position to search input if searching
+        if (isSearching) {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.focus();
+                // Restore cursor position if available
+                if (cursorPos !== null) {
+                    searchInput.setSelectionRange(cursorPos, cursorPos);
+                }
+            }
+        }
         // After DOM is updated, render the charts only when not searching
         if (!isSearching) {
             this.renderStatsChart();
