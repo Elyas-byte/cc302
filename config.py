@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 
+
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-in-production'
@@ -8,16 +9,19 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
 
+
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
     TESTING = False
+
 
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
     TESTING = False
     SESSION_COOKIE_SECURE = True
+
 
 class TestingConfig(Config):
     """Testing configuration"""
