@@ -40,10 +40,10 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/todo-app:${{ steps.version.outputs.VERSION }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/todo-app:v${{ steps.version.outputs.MAJOR }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/todo-app:v${{ steps.version.outputs.MAJOR }}.${{ steps.version.outputs.MINOR }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/todo-app:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/todo:${{ steps.version.outputs.VERSION }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/todo:v${{ steps.version.outputs.MAJOR }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/todo:v${{ steps.version.outputs.MAJOR }}.${{ steps.version.outputs.MINOR }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/todo:latest
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
