@@ -37,4 +37,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/todo-app:${{ steps.version.outputs.VERSION }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/todo:${{ steps.version.outputs.VERSION }}
