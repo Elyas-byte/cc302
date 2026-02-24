@@ -45,12 +45,21 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/todo:v${{ steps.version.outputs.MAJOR }}.${{ steps.version.outputs.MINOR }}
             ${{ secrets.DOCKERHUB_USERNAME }}/todo:latest
 
-      - name: Create GitHub Release
-        uses: actions/create-release@v1
+      - name: Create and push git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag v${{ steps.version.outputs.VERSION }}
+          git push origin v${{ steps.version.outputs.VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.VERSION }}
-          release_name: Release v${{ steps.version.outputs.VERSION }}
+          name: Release v${{ steps.version.outputs.VERSION }}
           draft: false
           prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
