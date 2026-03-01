@@ -8,6 +8,8 @@ class Config:
     SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
     SESSION_COOKIE_HTTPONLY = True
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///todo.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
 class DevelopmentConfig(Config):
@@ -26,3 +28,4 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     """Testing configuration"""
     TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
