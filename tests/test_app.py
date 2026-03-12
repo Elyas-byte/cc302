@@ -49,7 +49,7 @@ class TestRoutes:
     def test_index_route_exists(self, client):
         """Test that index route is accessible."""
         response = client.get('/')
-        assert response.status_code in [200, 404]
+        assert response.status_code == 201  # INTENTIONAL FAILURE: This should fail until fixed
 
     def test_index_route_returns_html(self, client):
         """Test that index route returns HTML content."""
