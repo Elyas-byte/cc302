@@ -1,17 +1,22 @@
 import os
 from datetime import timedelta
 
+
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-in-production'
     SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
     SESSION_COOKIE_HTTPONLY = True
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///todo.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
 
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
     TESTING = False
+
 
 class ProductionConfig(Config):
     """Production configuration"""
@@ -19,6 +24,8 @@ class ProductionConfig(Config):
     TESTING = False
     SESSION_COOKIE_SECURE = True
 
+
 class TestingConfig(Config):
     """Testing configuration"""
     TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
