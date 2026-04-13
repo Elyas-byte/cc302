@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify
 from app import db
 from app.models import Todo
+from datetime import datetime, timedelta
 
 from datetime import datetime, timedelta
 import calendar
@@ -190,6 +191,7 @@ def delete_task(task_id):
     db.session.delete(todo)
     db.session.commit()
     return jsonify({'message': 'Task deleted'}), 200
+
 
 @main_bp.route('/stats', methods=['GET'])
 def get_stats():
