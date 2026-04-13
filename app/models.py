@@ -12,6 +12,11 @@ class Todo(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     due_date = db.Column(db.DateTime, nullable=True)
+    tags = db.Column(db.String(200), nullable=True)
+    priority = db.Column(db.Integer, default=0)
+    estimated_minutes = db.Column(db.Integer, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_by = db.Column(db.String(100), nullable=True)
 
     # Recurrence fields
     is_recurring = db.Column(db.Boolean, default=False)
@@ -37,4 +42,9 @@ class Todo(db.Model):
             'recurrence_interval': self.recurrence_interval,
             'recurrence_days': self.recurrence_days,
             'recurrence_end_date': self.recurrence_end_date.strftime('%Y-%m-%d') if self.recurrence_end_date else None,
+            'tags': self.tags,
+            'priority': self.priority,
+            'estimated_minutes': self.estimated_minutes,
+            'notes': self.notes,
+            'created_by': self.created_by,
         }
