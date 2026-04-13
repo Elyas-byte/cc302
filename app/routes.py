@@ -76,6 +76,22 @@ def create_task():
         except Exception:
             recurrence_end_date = None
 
+    # metadata fields
+    tags = data.get('tags')
+    priority = 0
+    try:
+        priority = int(data.get('priority') or 0)
+    except Exception:
+        priority = 0
+    estimated_minutes = None
+    if data.get('estimated_minutes') is not None:
+        try:
+            estimated_minutes = int(data.get('estimated_minutes'))
+        except Exception:
+            estimated_minutes = None
+    notes = data.get('notes')
+    created_by = data.get('created_by')
+
     todo = Todo(
         title=data['title'],
         description=data.get('description', ''),
@@ -86,6 +102,11 @@ def create_task():
         recurrence_interval=recurrence_interval,
         recurrence_days=recurrence_days,
         recurrence_end_date=recurrence_end_date,
+        tags=tags,
+        priority=priority,
+        estimated_minutes=estimated_minutes,
+        notes=notes,
+        created_by=created_by,
     )
     db.session.add(todo)
     db.session.commit()
@@ -109,6 +130,25 @@ def update_task(task_id):
         todo.title = data['title']
     if 'description' in data:
         todo.description = data['description']
+
+    # metadata updates
+    if 'tags' in data:
+        todo.tags = data.get('tags')
+    if 'priority' in data:
+        try:
+            todo.priority = int(data.get('priority') or 0)
+        except Exception:
+            todo.priority = 0
+    if 'estimated_minutes' in data:
+        try:
+            em = data.get('estimated_minutes')
+            todo.estimated_minutes = int(em) if em not in (None, '') else None
+        except Exception:
+            todo.estimated_minutes = None
+    if 'notes' in data:
+        todo.notes = data.get('notes')
+    if 'created_by' in data:
+        todo.created_by = data.get('created_by')
 
     # due_date
     if 'due_date' in data:
@@ -173,6 +213,11 @@ def update_task(task_id):
                         recurrence_interval=todo.recurrence_interval,
                         recurrence_days=todo.recurrence_days,
                         recurrence_end_date=todo.recurrence_end_date,
+                        tags=todo.tags,
+                        priority=todo.priority,
+                        estimated_minutes=todo.estimated_minutes,
+                        notes=todo.notes,
+                        created_by=todo.created_by,
                     )
                     db.session.add(new_todo)
 
