@@ -36,6 +36,7 @@ def index():
 
 # ── API Routes for CRUD operations ──
 
+
 @main_bp.route('/tasks', methods=['GET'])
 def get_tasks():
     """Read all tasks."""
@@ -49,11 +50,13 @@ def create_task():
     data = request.get_json()
     if not data or not data.get('title'):
         return jsonify({'error': 'Title is required'}), 400
-    # parse optional due_date
+
+    # parse optional due_date safely
     due_date = None
-    if data.get('due_date'):
+    due_date_str = data.get('due_date')
+    if due_date_str:
         try:
-            due_date = datetime.strptime(data.get('due_date'), '%Y-%m-%d')
+            due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
         except Exception:
             due_date = None
 
@@ -65,10 +68,12 @@ def create_task():
     except Exception:
         recurrence_interval = 1
     recurrence_days = data.get('recurrence_days')
+
     recurrence_end_date = None
-    if data.get('recurrence_end_date'):
+    recurrence_end_str = data.get('recurrence_end_date')
+    if recurrence_end_str:
         try:
-            recurrence_end_date = datetime.strptime(data.get('recurrence_end_date'), '%Y-%m-%d')
+            recurrence_end_date = datetime.strptime(recurrence_end_str, '%Y-%m-%d')
         except Exception:
             recurrence_end_date = None
 
@@ -101,7 +106,6 @@ def update_task(task_id):
     todo = Todo.query.get_or_404(task_id)
     data = request.get_json()
 
-    # basic fields
     if 'title' in data:
         todo.title = data['title']
     if 'description' in data:
@@ -109,8 +113,11 @@ def update_task(task_id):
 
     # due_date
     if 'due_date' in data:
+        due_date_str = data.get('due_date')
         try:
-            todo.due_date = datetime.strptime(data.get('due_date'), '%Y-%m-%d') if data.get('due_date') else None
+            todo.due_date = (
+                datetime.strptime(due_date_str, '%Y-%m-%d') if due_date_str else None
+            )
         except Exception:
             pass
 
@@ -127,8 +134,13 @@ def update_task(task_id):
     if 'recurrence_days' in data:
         todo.recurrence_days = data.get('recurrence_days')
     if 'recurrence_end_date' in data:
+        recurrence_end_str = data.get('recurrence_end_date')
         try:
-            todo.recurrence_end_date = datetime.strptime(data.get('recurrence_end_date'), '%Y-%m-%d') if data.get('recurrence_end_date') else None
+            todo.recurrence_end_date = (
+                datetime.strptime(recurrence_end_str, '%Y-%m-%d')
+                if recurrence_end_str
+                else None
+            )
         except Exception:
             pass
 
@@ -136,11 +148,22 @@ def update_task(task_id):
     if 'completed' in data:
         new_completed_val = bool(data.get('completed'))
         # only generate next occurrence when flipping from incomplete -> complete
-        if not todo.completed and new_completed_val and todo.is_recurring and todo.recurrence_type and todo.due_date:
-            next_due = calculate_next_due_date(todo.due_date, todo.recurrence_type, todo.recurrence_interval)
+        if (
+            not todo.completed
+            and new_completed_val
+            and todo.is_recurring
+            and todo.recurrence_type
+            and todo.due_date
+        ):
+            next_due = calculate_next_due_date(
+                todo.due_date, todo.recurrence_type, todo.recurrence_interval
+            )
             if next_due:
                 # check recurrence_end_date
-                if not todo.recurrence_end_date or next_due.date() <= todo.recurrence_end_date.date():
+                if (
+                    not todo.recurrence_end_date
+                    or next_due.date() <= todo.recurrence_end_date.date()
+                ):
                     new_todo = Todo(
                         title=todo.title,
                         description=todo.description,
