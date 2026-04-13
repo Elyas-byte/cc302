@@ -31,6 +31,26 @@
                        style="padding: 0.75rem; font-size: 1rem;">
             </div>
 
+            <div>
+                <label for="recurrence_type" class="form-label">Recurrence</label>
+                <select id="recurrence_type" name="recurrence_type" class="form-control" style="padding: 0.5rem;">
+                    <option value="" {% if not todo.is_recurring %}selected{% endif %}>None</option>
+                    <option value="daily" {% if todo.recurrence_type == 'daily' %}selected{% endif %}>Daily</option>
+                    <option value="weekly" {% if todo.recurrence_type == 'weekly' %}selected{% endif %}>Weekly</option>
+                    <option value="monthly" {% if todo.recurrence_type == 'monthly' %}selected{% endif %}>Monthly</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="recurrence_interval" class="form-label">Interval</label>
+                <input type="number" class="form-control" id="recurrence_interval" name="recurrence_interval" value="{{ todo.recurrence_interval or 1 }}" min="1" style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
+            <div>
+                <label for="recurrence_end_date" class="form-label">Recurrence End</label>
+                <input type="date" class="form-control" id="recurrence_end_date" name="recurrence_end_date" value="{% if todo.recurrence_end_date %}{{ todo.recurrence_end_date.strftime('%Y-%m-%d') }}{% endif %}" style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
             <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
                 <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Save Changes</button>
                 <a href="{{ url_for('main.view_todo', todo_id=todo.id) }}" class="btn btn-ghost" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Cancel</a>
