@@ -32,6 +32,39 @@
             </div>
 
             <div>
+                <label for="tags" class="form-label">Tags (comma-separated)</label>
+                <input type="text" class="form-control" id="tags" name="tags" value="{{ todo.tags or '' }}" placeholder="e.g. work,urgent"
+                       style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
+            <div>
+                <label for="priority" class="form-label">Priority</label>
+                <select id="priority" name="priority" class="form-control" style="padding: 0.75rem; font-size: 1rem;">
+                    <option value="0" {% if todo.priority == 0 %}selected{% endif %}>Low</option>
+                    <option value="1" {% if todo.priority == 1 %}selected{% endif %}>Medium</option>
+                    <option value="2" {% if todo.priority == 2 %}selected{% endif %}>High</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="estimated_minutes" class="form-label">Estimated time (minutes)</label>
+                <input type="number" class="form-control" id="estimated_minutes" name="estimated_minutes" min="0"
+                       value="{{ todo.estimated_minutes or '' }}" placeholder="e.g. 30" style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
+            <div>
+                <label for="notes" class="form-label">Notes</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Optional notes"
+                          style="padding: 0.75rem; font-size: 1rem;">{{ todo.notes or '' }}</textarea>
+            </div>
+
+            <div>
+                <label for="created_by" class="form-label">Created by</label>
+                <input type="text" class="form-control" id="created_by" name="created_by" value="{{ todo.created_by or '' }}" placeholder="Your name"
+                       style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
+            <div>
                 <label for="recurrence_type" class="form-label">Recurrence</label>
                 <select id="recurrence_type" name="recurrence_type" class="form-control" style="padding: 0.5rem;">
                     <option value="" {% if not todo.is_recurring %}selected{% endif %}>None</option>
