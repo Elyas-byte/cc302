@@ -49,6 +49,36 @@
                 <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">{{ todo.due_date.strftime('%Y-%m-%d') }}</p>
             </div>
             {% endif %}
+            {% if todo.tags %}
+            <div>
+                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Tags</h6>
+                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">{{ todo.tags }}</p>
+            </div>
+            {% endif %}
+            {% if todo.priority is not none %}
+            <div>
+                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Priority</h6>
+                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">{% if todo.priority == 2 %}High{% elif todo.priority == 1 %}Medium{% else %}Low{% endif %}</p>
+            </div>
+            {% endif %}
+            {% if todo.estimated_minutes %}
+            <div>
+                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Estimated</h6>
+                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">{{ todo.estimated_minutes }} minutes</p>
+            </div>
+            {% endif %}
+            {% if todo.created_by %}
+            <div>
+                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Created By</h6>
+                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">{{ todo.created_by }}</p>
+            </div>
+            {% endif %}
+            {% if todo.is_recurring %}
+            <div>
+                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Recurrence</h6>
+                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">{{ todo.recurrence_type }} every {{ todo.recurrence_interval }}{% if todo.recurrence_end_date %} until {{ todo.recurrence_end_date.strftime('%Y-%m-%d') }}{% endif %}</p>
+            </div>
+            {% endif %}
         </div>
 
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">

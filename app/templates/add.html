@@ -30,6 +30,59 @@
                        style="padding: 0.75rem; font-size: 1rem;">
             </div>
 
+            <div>
+                <label for="tags" class="form-label">Tags (comma-separated)</label>
+                <input type="text" class="form-control" id="tags" name="tags" placeholder="e.g. work,urgent"
+                       style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
+            <div>
+                <label for="priority" class="form-label">Priority</label>
+                <select id="priority" name="priority" class="form-control" style="padding: 0.75rem; font-size: 1rem;">
+                    <option value="0">Low</option>
+                    <option value="1">Medium</option>
+                    <option value="2">High</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="estimated_minutes" class="form-label">Estimated time (minutes)</label>
+                <input type="number" class="form-control" id="estimated_minutes" name="estimated_minutes" min="0"
+                       placeholder="e.g. 30" style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
+            <div>
+                <label for="notes" class="form-label">Notes</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Optional notes"
+                          style="padding: 0.75rem; font-size: 1rem;"></textarea>
+            </div>
+
+            <div>
+                <label for="created_by" class="form-label">Created by</label>
+                <input type="text" class="form-control" id="created_by" name="created_by" placeholder="Your name"
+                       style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
+            <div>
+                <label for="recurrence_type" class="form-label">Recurrence</label>
+                <select id="recurrence_type" name="recurrence_type" class="form-control" style="padding: 0.5rem;">
+                    <option value="">None</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="recurrence_interval" class="form-label">Interval</label>
+                <input type="number" class="form-control" id="recurrence_interval" name="recurrence_interval" value="1" min="1" style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
+            <div>
+                <label for="recurrence_end_date" class="form-label">Recurrence End</label>
+                <input type="date" class="form-control" id="recurrence_end_date" name="recurrence_end_date" style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
             <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
                 <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Create Task</button>
                 <a href="{{ url_for('main.index') }}" class="btn btn-ghost" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Cancel</a>

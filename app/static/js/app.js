@@ -264,7 +264,16 @@ class TodoApp {
     }
 
     // Create a new todo
-    addTodo(title, description = '', dueDate = null) {
+    addTodo(
+        title,
+        description = '',
+        dueDate = null,
+        tags = '',
+        priority = 0,
+        estimatedMinutes = null,
+        notes = '',
+        createdBy = ''
+    ) {
         const newTodo = {
             id: Date.now(),
             title,
@@ -273,6 +282,11 @@ class TodoApp {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             dueDate,
+            tags,
+            priority,
+            estimatedMinutes,
+            notes,
+            createdBy,
             subtasks: []
         };
         this.todos.push(newTodo);
@@ -443,6 +457,61 @@ class TodoApp {
         return { total, completed, pending };
     }
 
+    // Get unique completion dates (YYYY-MM-DD) for completed todos
+    getCompletionDates() {
+        const dates = new Set();
+        this.todos.forEach(todo => {
+            if (!todo.completed || !todo.updatedAt) return;
+            const d = new Date(todo.updatedAt);
+            d.setHours(0, 0, 0, 0);
+            dates.add(d.toISOString().split('T')[0]);
+        });
+        return Array.from(dates).sort();
+    }
+
+    // Calculate current and best streaks based on completion dates
+    calculateStreaks() {
+        const dateStrs = this.getCompletionDates();
+        const dateSet = new Set(dateStrs);
+
+        // Current streak: consecutive days ending today
+        let current = 0;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let cursor = new Date(today);
+        while (dateSet.has(cursor.toISOString().split('T')[0])) {
+            current += 1;
+            cursor.setDate(cursor.getDate() - 1);
+        }
+
+        // Best streak: longest consecutive run in history
+        let best = 0;
+        if (dateStrs.length > 0) {
+            // convert to Date objects at midnight
+            const days = dateStrs.map(s => {
+                const d = new Date(s);
+                d.setHours(0, 0, 0, 0);
+                return d;
+            }).sort((a, b) => a - b);
+
+            let run = 1;
+            for (let i = 1; i < days.length; i++) {
+                const prev = days[i - 1];
+                const cur = days[i];
+                const diff = Math.round((cur - prev) / (1000 * 60 * 60 * 24));
+                if (diff === 1) {
+                    run += 1;
+                } else {
+                    if (run > best) best = run;
+                    run = 1;
+                }
+            }
+            if (run > best) best = run;
+        }
+
+        return { current, best };
+    }
+
     // Search todos
     searchTodos(query) {
         if (!query || query.trim().length === 0) {
@@ -453,7 +522,9 @@ class TodoApp {
         return this.todos.filter(todo => {
             const titleMatch = todo.title.toLowerCase().includes(searchTerm);
             const descriptionMatch = todo.description && todo.description.toLowerCase().includes(searchTerm);
-            return titleMatch || descriptionMatch;
+            const tagsMatch = todo.tags && todo.tags.toLowerCase().includes(searchTerm);
+            const notesMatch = todo.notes && todo.notes.toLowerCase().includes(searchTerm);
+            return titleMatch || descriptionMatch || tagsMatch || notesMatch;
         });
     }
 
@@ -483,27 +554,36 @@ class TodoApp {
         const description = document.getElementById('description').value.trim();
         const dueDate = document.getElementById('dueDate').value || null;
 
+        // metadata fields from form
+        const tags = document.getElementById('tags') ? document.getElementById('tags').value.trim() : '';
+        const priorityVal = document.getElementById('priority') ? document.getElementById('priority').value : '0';
+        const priority = parseInt(priorityVal, 10) || 0;
+        const estimatedMinutesVal = document.getElementById('estimatedMinutes') ? document.getElementById('estimatedMinutes').value : '';
+        const estimatedMinutes = estimatedMinutesVal ? parseInt(estimatedMinutesVal, 10) : null;
+        const notes = document.getElementById('notes') ? document.getElementById('notes').value.trim() : '';
+        const createdBy = document.getElementById('createdBy') ? document.getElementById('createdBy').value.trim() : '';
+
         if (!title) {
             this.showNotification('Title is required!', 'danger');
             return;
         }
 
         if (formType === 'add') {
-            const todo = this.addTodo(title, description, dueDate);
-            
+            const todo = this.addTodo(title, description, dueDate, tags, priority, estimatedMinutes, notes, createdBy);
+
             // Add initial subtasks if any
             const formSubtasks = this.getFormSubtasks();
             formSubtasks.forEach(s => {
                 this.addSubtask(todo.id, s.title);
             });
-            
+
             // Clear form subtasks
             localStorage.removeItem('formSubtasks');
-            
+
             this.renderDashboard();
         } else if (formType === 'edit') {
             const id = parseInt(document.getElementById('todoForm').dataset.todoId);
-            this.updateTodo(id, { title, description, dueDate });
+            this.updateTodo(id, { title, description, dueDate, tags, priority, estimatedMinutes, notes, createdBy });
             this.showNotification(`Todo "${title}" updated successfully!`, 'success');
             this.renderDetailView(id);
         }
@@ -536,6 +616,7 @@ class TodoApp {
         const stats = this.getStats();
         const displayedTodos = this.searchTodos(this.searchQuery);
         const isSearching = this.searchQuery.length > 0;
+        const streaks = this.calculateStreaks();
 
         let html = `
             <div class="action-bar">
@@ -545,7 +626,10 @@ class TodoApp {
                     </div>
                 </div>
                 <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                    <input type="text" id="searchInput" class="form-control" 
+                    <div class="streak-badge" style="background-color:#ecfccb;color:#065f46;padding:0.45rem 0.65rem;border-radius:8px;font-weight:600;">
+                        🔥 Streak: ${streaks.current} (best: ${streaks.best})
+                    </div>
+                    <input type="text" id="searchInput" class="form-control"
                            placeholder="Search tasks..." 
                            value="${this.escapeHtml(this.searchQuery)}"
                            style="max-width: 300px; padding: 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border-color); background-color: var(--bg-white); color: var(--text-primary);">
@@ -800,6 +884,39 @@ class TodoApp {
                                    style="padding: 0.75rem; font-size: 1rem;">
                         </div>
 
+                        <div>
+                            <label for="tags" class="form-label">Tags (comma-separated)</label>
+                            <input type="text" id="tags" class="form-control" placeholder="e.g. work,urgent"
+                                   style="padding: 0.75rem; font-size: 1rem;">
+                        </div>
+
+                        <div>
+                            <label for="priority" class="form-label">Priority</label>
+                            <select id="priority" class="form-control" style="padding: 0.75rem; font-size: 1rem;">
+                                <option value="0">Low</option>
+                                <option value="1">Medium</option>
+                                <option value="2">High</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="estimatedMinutes" class="form-label">Estimated time (minutes)</label>
+                            <input type="number" id="estimatedMinutes" min="0" class="form-control" placeholder="e.g. 30"
+                                   style="padding: 0.75rem; font-size: 1rem;">
+                        </div>
+
+                        <div>
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea id="notes" class="form-control" rows="3" placeholder="Optional notes"
+                                      style="padding: 0.75rem; font-size: 1rem;"></textarea>
+                        </div>
+
+                        <div>
+                            <label for="createdBy" class="form-label">Created by</label>
+                            <input type="text" id="createdBy" class="form-control" placeholder="Your name"
+                                   style="padding: 0.75rem; font-size: 1rem;">
+                        </div>
+
                         <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 0.5rem;">
                             <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-primary);">Subtasks (optional)</h3>
                             <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
@@ -978,7 +1095,38 @@ class TodoApp {
                                 <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">${this.formatDate(todo.dueDate)}</p>
                             </div>
                         ` : ''}
+                        ${todo.tags ? `
+                            <div>
+                                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Tags</h6>
+                                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">${this.escapeHtml(todo.tags)}</p>
+                            </div>
+                        ` : ''}
+                        ${todo.priority !== undefined ? `
+                            <div>
+                                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Priority</h6>
+                                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">${todo.priority === 2 ? 'High' : todo.priority === 1 ? 'Medium' : 'Low'}</p>
+                            </div>
+                        ` : ''}
+                        ${todo.estimatedMinutes ? `
+                            <div>
+                                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Estimated</h6>
+                                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">${todo.estimatedMinutes} minutes</p>
+                            </div>
+                        ` : ''}
+                        ${todo.createdBy ? `
+                            <div>
+                                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Created By</h6>
+                                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">${this.escapeHtml(todo.createdBy)}</p>
+                            </div>
+                        ` : ''}
                     </div>
+
+                    ${todo.notes ? `
+                        <div style="margin-top: 1rem; margin-bottom: 1.5rem;">
+                            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Notes</h3>
+                            <p style="font-size: 1rem; color: var(--text-primary); line-height: 1.6;">${this.escapeHtml(todo.notes)}</p>
+                        </div>
+                    ` : ''}
 
                     <div style="margin-bottom: 1.5rem;">
                         <button id="addSubtaskBtn" class="btn btn-secondary" style="width: 100%; padding: 0.75rem; font-size: 1rem; margin-bottom: 1rem;">+ Add Subtask</button>
@@ -1037,6 +1185,41 @@ class TodoApp {
                             <label for="dueDate" class="form-label">Due Date</label>
                             <input type="date" class="form-control" id="dueDate" 
                                    value="${todo.dueDate ? this.formatDate(todo.dueDate) : ''}"
+                                   style="padding: 0.75rem; font-size: 1rem;">
+                        </div>
+                        <div>
+                            <label for="tags" class="form-label">Tags (comma-separated)</label>
+                            <input type="text" id="tags" class="form-control" placeholder="e.g. work,urgent"
+                                   value="${this.escapeHtml(todo.tags || '')}"
+                                   style="padding: 0.75rem; font-size: 1rem;">
+                        </div>
+
+                        <div>
+                            <label for="priority" class="form-label">Priority</label>
+                            <select id="priority" class="form-control" style="padding: 0.75rem; font-size: 1rem;">
+                                <option value="0" ${todo.priority === 0 ? 'selected' : ''}>Low</option>
+                                <option value="1" ${todo.priority === 1 ? 'selected' : ''}>Medium</option>
+                                <option value="2" ${todo.priority === 2 ? 'selected' : ''}>High</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="estimatedMinutes" class="form-label">Estimated time (minutes)</label>
+                            <input type="number" id="estimatedMinutes" min="0" class="form-control" placeholder="e.g. 30"
+                                   value="${todo.estimatedMinutes ? todo.estimatedMinutes : ''}"
+                                   style="padding: 0.75rem; font-size: 1rem;">
+                        </div>
+
+                        <div>
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea id="notes" class="form-control" rows="3" placeholder="Optional notes"
+                                      style="padding: 0.75rem; font-size: 1rem;">${this.escapeHtml(todo.notes || '')}</textarea>
+                        </div>
+
+                        <div>
+                            <label for="createdBy" class="form-label">Created by</label>
+                            <input type="text" id="createdBy" class="form-control" placeholder="Your name"
+                                   value="${this.escapeHtml(todo.createdBy || '')}"
                                    style="padding: 0.75rem; font-size: 1rem;">
                         </div>
                         <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
