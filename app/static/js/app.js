@@ -443,6 +443,61 @@ class TodoApp {
         return { total, completed, pending };
     }
 
+    // Get unique completion dates (YYYY-MM-DD) for completed todos
+    getCompletionDates() {
+        const dates = new Set();
+        this.todos.forEach(todo => {
+            if (!todo.completed || !todo.updatedAt) return;
+            const d = new Date(todo.updatedAt);
+            d.setHours(0, 0, 0, 0);
+            dates.add(d.toISOString().split('T')[0]);
+        });
+        return Array.from(dates).sort();
+    }
+
+    // Calculate current and best streaks based on completion dates
+    calculateStreaks() {
+        const dateStrs = this.getCompletionDates();
+        const dateSet = new Set(dateStrs);
+
+        // Current streak: consecutive days ending today
+        let current = 0;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let cursor = new Date(today);
+        while (dateSet.has(cursor.toISOString().split('T')[0])) {
+            current += 1;
+            cursor.setDate(cursor.getDate() - 1);
+        }
+
+        // Best streak: longest consecutive run in history
+        let best = 0;
+        if (dateStrs.length > 0) {
+            // convert to Date objects at midnight
+            const days = dateStrs.map(s => {
+                const d = new Date(s);
+                d.setHours(0, 0, 0, 0);
+                return d;
+            }).sort((a, b) => a - b);
+
+            let run = 1;
+            for (let i = 1; i < days.length; i++) {
+                const prev = days[i - 1];
+                const cur = days[i];
+                const diff = Math.round((cur - prev) / (1000 * 60 * 60 * 24));
+                if (diff === 1) {
+                    run += 1;
+                } else {
+                    if (run > best) best = run;
+                    run = 1;
+                }
+            }
+            if (run > best) best = run;
+        }
+
+        return { current, best };
+    }
+
     // Search todos
     searchTodos(query) {
         if (!query || query.trim().length === 0) {
@@ -536,6 +591,7 @@ class TodoApp {
         const stats = this.getStats();
         const displayedTodos = this.searchTodos(this.searchQuery);
         const isSearching = this.searchQuery.length > 0;
+        const streaks = this.calculateStreaks();
 
         let html = `
             <div class="action-bar">
@@ -545,7 +601,10 @@ class TodoApp {
                     </div>
                 </div>
                 <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                    <input type="text" id="searchInput" class="form-control" 
+                    <div class="streak-badge" style="background-color:#ecfccb;color:#065f46;padding:0.45rem 0.65rem;border-radius:8px;font-weight:600;">
+                        🔥 Streak: ${streaks.current} (best: ${streaks.best})
+                    </div>
+                    <input type="text" id="searchInput" class="form-control"
                            placeholder="Search tasks..." 
                            value="${this.escapeHtml(this.searchQuery)}"
                            style="max-width: 300px; padding: 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border-color); background-color: var(--bg-white); color: var(--text-primary);">
