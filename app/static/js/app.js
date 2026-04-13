@@ -86,6 +86,22 @@ class TodoApp {
         return this.todos.filter(todo => {
             if (todo.completed || !todo.dueDate) return false;
             const dueDate = new Date(todo.dueDate);
+            const nowMs = now.getTime();
+            const dueMs = dueDate.getTime();
+
+            // If a per-task reminder is set, trigger when now is between
+            // (dueDate - reminderMinutes) and dueDate, or when overdue.
+            if (todo.reminderMinutes !== undefined && todo.reminderMinutes !== null && todo.reminderMinutes !== '') {
+                const rm = Number(todo.reminderMinutes);
+                if (Number.isFinite(rm)) {
+                    const reminderMs = dueMs - rm * 60 * 1000;
+                    if (nowMs >= reminderMs && nowMs <= dueMs) return true;
+                    if (nowMs > dueMs) return true; // overdue
+                    return false;
+                }
+            }
+
+            // Fallback: tasks due within the next `hoursAhead` hours
             return dueDate > now && dueDate <= futureTime;
         });
     }
@@ -264,7 +280,7 @@ class TodoApp {
     }
 
     // Create a new todo
-    addTodo(title, description = '', dueDate = null) {
+    addTodo(title, description = '', dueDate = null, reminderMinutes = null) {
         const newTodo = {
             id: Date.now(),
             title,
@@ -273,6 +289,7 @@ class TodoApp {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             dueDate,
+            reminderMinutes,
             subtasks: []
         };
         this.todos.push(newTodo);
@@ -489,7 +506,9 @@ class TodoApp {
         }
 
         if (formType === 'add') {
-            const todo = this.addTodo(title, description, dueDate);
+            const rmVal = document.getElementById('reminderMinutes') ? document.getElementById('reminderMinutes').value : '';
+            const reminderMinutes = rmVal ? parseInt(rmVal, 10) : null;
+            const todo = this.addTodo(title, description, dueDate, reminderMinutes);
             
             // Add initial subtasks if any
             const formSubtasks = this.getFormSubtasks();
@@ -503,7 +522,9 @@ class TodoApp {
             this.renderDashboard();
         } else if (formType === 'edit') {
             const id = parseInt(document.getElementById('todoForm').dataset.todoId);
-            this.updateTodo(id, { title, description, dueDate });
+            const rmVal = document.getElementById('reminderMinutes') ? document.getElementById('reminderMinutes').value : '';
+            const reminderMinutes = rmVal ? parseInt(rmVal, 10) : null;
+            this.updateTodo(id, { title, description, dueDate, reminderMinutes });
             this.showNotification(`Todo "${title}" updated successfully!`, 'success');
             this.renderDetailView(id);
         }
@@ -800,6 +821,12 @@ class TodoApp {
                                    style="padding: 0.75rem; font-size: 1rem;">
                         </div>
 
+                        <div>
+                            <label for="reminderMinutes" class="form-label">Remind me (minutes before due)</label>
+                            <input type="number" id="reminderMinutes" class="form-control" placeholder="e.g. 60 for 1 hour before" min="0"
+                                   style="padding: 0.75rem; font-size: 1rem;">
+                        </div>
+
                         <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 0.5rem;">
                             <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-primary);">Subtasks (optional)</h3>
                             <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
@@ -978,6 +1005,12 @@ class TodoApp {
                                 <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">${this.formatDate(todo.dueDate)}</p>
                             </div>
                         ` : ''}
+                        ${todo.reminderMinutes ? `
+                            <div>
+                                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Reminder</h6>
+                                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">Remind ${todo.reminderMinutes} minutes before due</p>
+                            </div>
+                        ` : ''}
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
@@ -1038,6 +1071,12 @@ class TodoApp {
                             <input type="date" class="form-control" id="dueDate" 
                                    value="${todo.dueDate ? this.formatDate(todo.dueDate) : ''}"
                                    style="padding: 0.75rem; font-size: 1rem;">
+                        </div>
+                        <div>
+                            <label for="reminderMinutes" class="form-label">Remind me (minutes before due)</label>
+                            <input type="number" id="reminderMinutes" class="form-control" min="0"
+                                   value="${todo.reminderMinutes ? todo.reminderMinutes : ''}"
+                                   placeholder="e.g. 60 for 1 hour before" style="padding: 0.75rem; font-size: 1rem;">
                         </div>
                         <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
                             <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Save Changes</button>

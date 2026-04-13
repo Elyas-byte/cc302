@@ -31,6 +31,13 @@
                        style="padding: 0.75rem; font-size: 1rem;">
             </div>
 
+            <div>
+                <label for="reminder_minutes" class="form-label">Remind me (minutes before due)</label>
+                <input type="number" class="form-control" id="reminder_minutes" name="reminder_minutes" min="0"
+                       value="{{ todo.reminder_minutes or '' }}" placeholder="e.g. 60 for 1 hour before"
+                       style="padding: 0.75rem; font-size: 1rem;">
+            </div>
+
             <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
                 <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Save Changes</button>
                 <a href="{{ url_for('main.view_todo', todo_id=todo.id) }}" class="btn btn-ghost" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Cancel</a>

@@ -49,6 +49,12 @@
                 <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">{{ todo.due_date.strftime('%Y-%m-%d') }}</p>
             </div>
             {% endif %}
+            {% if todo.reminder_minutes %}
+            <div>
+                <h6 style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;">Reminder</h6>
+                <p style="font-size: 0.95rem; color: var(--text-primary); margin: 0;">Remind {{ todo.reminder_minutes }} minutes before due</p>
+            </div>
+            {% endif %}
         </div>
 
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">

@@ -12,6 +12,7 @@ class Todo(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     due_date = db.Column(db.DateTime, nullable=True)
+    reminder_minutes = db.Column(db.Integer, nullable=True)
 
     def __repr__(self):
         return f'<Todo {self.id}: {self.title}>'
@@ -24,5 +25,6 @@ class Todo(db.Model):
             'completed': self.completed,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'due_date': self.due_date.strftime('%Y-%m-%d') if self.due_date else None
+            'due_date': self.due_date.strftime('%Y-%m-%d') if self.due_date else None,
+            'reminder_minutes': self.reminder_minutes,
         }
