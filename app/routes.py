@@ -2,8 +2,6 @@ from flask import Blueprint, render_template, request, jsonify
 from app import db
 from app.models import Todo
 from datetime import datetime, timedelta
-
-from datetime import datetime, timedelta
 import calendar
 
 main_bp = Blueprint('main', __name__)
